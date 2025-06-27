@@ -169,8 +169,8 @@
             <button 
               type="button"
               class="absolute top-4 right-4 cursor-pointer focus:outline-none w-16 h-20"
-              onMouseEnter={() => isStampHovered = true}
-              onMouseLeave={() => isStampHovered = false}
+              onmouseenter={() => isStampHovered = true}
+              onmouseleave={() => isStampHovered = false}
               onclick={handleChangeStamp}
             >
               <div class="relative w-full h-full">
@@ -264,8 +264,8 @@
         <div class="relative">
           <button 
             class="w-11 h-11 flex items-center justify-center rounded-[12px] hover:bg-[#F2F2F7] text-[#3D3D3D] transition-colors"
-            onMouseEnter={handleFontMenuEnter}
-            onMouseLeave={handleFontMenuLeave}
+            onmouseenter={handleFontMenuEnter}
+            onmouseleave={handleFontMenuLeave}
           >
             <span class="{selectedFont === 'Caveat' ? 'font-caveat' : selectedFont === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'} {selectedFont === 'Caveat' ? 'text-[24px]' : 'text-[20px]'}">Aa</span>
           </button>
@@ -275,8 +275,8 @@
               class="font-selector-menu absolute top-0 left-0 -translate-y-full bg-white rounded-[12px] shadow-[0px_2px_20px_rgba(0,0,0,0.1)] overflow-hidden min-w-[120px] transition-all duration-200 ease-out origin-bottom-left mt-[-8px]"
               in:scale={{ duration: 200, start: 0.95, opacity: 0 }}
               out:scale={{ duration: 150, start: 0.95, opacity: 0 }}
-              onMouseEnter={handleFontMenuEnter}
-              onMouseLeave={handleFontMenuLeave}
+              onmouseenter={handleFontMenuEnter}
+              onmouseleave={handleFontMenuLeave}
             >
               {#each fonts as font}
                 <button
@@ -294,8 +294,8 @@
         <div class="relative">
           <button 
             class="w-11 h-11 flex items-center justify-center rounded-[12px] hover:bg-[#F2F2F7] transition-colors"
-            onMouseEnter={handleColorMenuEnter}
-            onMouseLeave={handleColorMenuLeave}
+            onmouseenter={handleColorMenuEnter}
+            onmouseleave={handleColorMenuLeave}
           >
             <div class="w-5 h-5 rounded-full border border-[#E5E5EA]" style="background-color: {selectedColor};"></div>
           </button>
@@ -305,8 +305,8 @@
               class="color-selector-menu absolute top-0 left-0 -translate-y-full bg-white rounded-[12px] shadow-[0px_2px_20px_rgba(0,0,0,0.1)] overflow-hidden min-w-[120px] transition-all duration-200 ease-out origin-bottom-left mt-[-8px]"
               in:scale={{ duration: 200, start: 0.95, opacity: 0 }}
               out:scale={{ duration: 150, start: 0.95, opacity: 0 }}
-              onMouseEnter={handleColorMenuEnter}
-              onMouseLeave={handleColorMenuLeave}
+              onmouseenter={handleColorMenuEnter}
+              onmouseleave={handleColorMenuLeave}
             >
               {#each colors as color}
                 <button
