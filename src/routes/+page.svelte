@@ -74,8 +74,7 @@
         <div class="text-center text-black text-[48px] sm:text-[64px] font-jomhuria font-normal w-full leading-[48px] sm:leading-[64px]">Send a postcard</div>
 
         <div class="text-center font-caveat text-[22px] sm:text-[26px] leading-[1.5] text-black px-[2px]">
-          There was a time when sending a postcard meant - slowing down to share a moment, a thought, or a feeling with friends and family far away. I've always loved that. This is my way of bringing back that magic digitally.<br>
-          In a world of instant messages, here's a space for art, memories, and words. Each postcard features artwork I've created over the years, and will keep adding to. Enjoy! <br> ~Sukanya
+          There was a time when sending a postcard meant - slowing down to share a moment, a thought, or a feeling with friends and family far away. I've always loved that. This is my way of bringing back that magic digitally. <br> In a world of instant messages, here's a space for art, memories, and words. Each postcard features artwork I've created over the years, and will keep adding to. Enjoy! <br> ~Sukanya
         </div>
       </div>
 

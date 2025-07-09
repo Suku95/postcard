@@ -49,7 +49,8 @@
       const loadedImages = storeState.images || [];
       MAX_IMAGES = loadedImages.length;
       if (MAX_IMAGES > 0) {
-        stackOrder = Array.from({ length: MAX_IMAGES }, (_, i) => i);
+        // Shuffle the stack order for stack view, excluding images 15 and 16 (indices 14 and 15)
+        stackOrder = shuffleArrayExcludingSpecific(Array.from({ length: MAX_IMAGES }, (_, i) => i), [14, 15]);
         allImages = Array.from({ length: MAX_IMAGES }, (_, i) => i + 1);
       } else {
         stackOrder = [];
@@ -152,6 +153,36 @@
     window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`, '_blank');
   }
 
+  function shuffleArray(array: number[]): number[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  function shuffleArrayExcludingSpecific(array: number[], excludeIndices: number[]): number[] {
+    // Filter out the excluded indices
+    const filteredArray = array.filter((_, index) => !excludeIndices.includes(index));
+    
+    // Shuffle the filtered array
+    const shuffledFiltered = shuffleArray(filteredArray);
+    
+    // Create result array with excluded indices in their original positions
+    const result = [...array];
+    let shuffledIndex = 0;
+    
+    for (let i = 0; i < result.length; i++) {
+      if (!excludeIndices.includes(i)) {
+        result[i] = shuffledFiltered[shuffledIndex];
+        shuffledIndex++;
+      }
+    }
+    
+    return result;
+  }
+
   function gotoPostPage(imageNum: number) {
     const viewParam = isStackView ? 'stack' : 'grid';
     goto(`/post?view=${viewParam}&image=${imageNum}`);
@@ -180,10 +211,10 @@
     <div class="flex flex-col items-center justify-center w-full max-w-xl mx-auto px-4 -mt-9">
       <h2 class="font-jomhuria font-normal text-[56px] mb-0 text-center">About</h2>
       <p class="font-caveat text-[26px] text-center text-black max-w-2xl">
-        There was a time when sending a postcard meant - slowing down to share a moment, a thought, or a feeling with friends and family far away. I've always loved that. This is my way of bringing back that magic digitally.<br><br>
+        There was a time when sending a postcard meant - slowing down to share a moment, a thought, or a feeling with friends and family far away. I've always loved that. This is my way of bringing back that magic digitally.<br>
         In a world of instant messages, here's a space for art, memories, and words. Each postcard features artwork I've created over the years, and will keep adding to. Enjoy! <br> ~Sukanya
       </p>
-      <div class="flex items-center gap-4 mt-12">
+      <div class="flex items-center gap-4 mt-8">
         <a href="https://www.instagram.com/artbysuku.png/" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#747474" fill="none">
             <path d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z" stroke="#747474" stroke-width="2" stroke-linejoin="round"></path>
@@ -196,14 +227,20 @@
             <path d="M2 18.5C3.76504 19.521 5.81428 20 8 20C14.4808 20 19.7617 14.8625 19.9922 8.43797L22 4.5L18.6458 5C17.9407 4.37764 17.0144 4 16 4C13.4276 4 11.5007 6.51734 12.1209 8.98003C8.56784 9.20927 5.34867 7.0213 3.48693 4.10523C2.25147 8.30185 3.39629 13.3561 6.5 16.4705C6.5 17.647 3.5 18.3488 2 18.5Z" stroke="#747474" stroke-width="2" stroke-linejoin="round"></path>
           </svg>
         </a>
-        <a href="https://coff.ee/suku1995f" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition-opacity">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#f56c00" fill="none">
-            <path d="M18.2505 10.5H19.6403C21.4918 10.5 22.0421 10.7655 21.9975 12.0838C21.9237 14.2674 20.939 16.8047 17 17.5" stroke="#f56c00" stroke-width="2" stroke-linecap="round"></path>
-            <path d="M5.94627 20.6145C2.57185 18.02 2.07468 14.3401 2.00143 10.5001C1.96979 8.8413 2.45126 8.5 4.65919 8.5H15.3408C17.5487 8.5 18.0302 8.8413 17.9986 10.5001C17.9253 14.3401 17.4281 18.02 14.0537 20.6145C13.0934 21.3528 12.2831 21.5 10.9194 21.5H9.08064C7.71686 21.5 6.90658 21.3528 5.94627 20.6145Z" stroke="#f56c00" stroke-width="2" stroke-linecap="round"></path>
-            <path d="M11.3089 2.5C10.7622 2.83861 10.0012 4 10.0012 5.5M7.53971 4C7.53971 4 7 4.5 7 5.5M14.0012 4C13.7279 4.1693 13.5 5 13.5 5.5" stroke="#f56c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </a>
       </div>
+      <a
+        href="https://buymeacoffee.com/suku1995f"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Buy me a coffee"
+        class="block mt-2 p-7"
+      >
+        <img
+          src="https://cdn.buymeacoffee.com/buttons/v2/default-black.png"
+          alt="Buy me a coffee"
+          class="h-10 w-auto rounded shadow hover:opacity-80 transition-opacity"
+        />
+      </a>
     </div>
     <!-- Corner Image -->
     <img 
