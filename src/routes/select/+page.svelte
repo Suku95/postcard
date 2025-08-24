@@ -191,7 +191,7 @@
 
 <svelte:head>
   <link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Inter:wght@400;500&family=Caveat:wght@400;500&family=Courier+Prime&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
 </svelte:head>
 
 {#if isAboutModalOpen}
@@ -288,7 +288,7 @@
         class="px-[10px] py-1 rounded-[40px] hover:bg-[#F2F2F7] hidden sm:block text-[#3D3D3D] text-base leading-5 font-inter hover:text-black transition-colors duration-200"
         onclick={redirectToContact} 
       >
-        Paper please
+        Print order
       </button>
       <button 
         class="px-[10px] py-1 rounded-[40px] hover:bg-[#F2F2F7] hidden sm:block text-[#3D3D3D] text-base leading-5 font-inter hover:text-black transition-colors duration-200"

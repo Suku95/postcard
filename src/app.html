@@ -4,6 +4,59 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<!-- Preload Material Symbols font for better performance -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+		
+		<!-- Hide icon text while font loads -->
+		<style>
+			.material-symbols-outlined {
+				font-family: 'Material Symbols Outlined';
+				font-weight: normal;
+				font-style: normal;
+				font-size: 24px;
+				line-height: 1;
+				letter-spacing: normal;
+				text-transform: none;
+				display: inline-block;
+				white-space: nowrap;
+				word-wrap: normal;
+				direction: ltr;
+				font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+			}
+			
+			/* Hide text content while font is loading */
+			.material-symbols-outlined {
+				opacity: 0;
+				transition: opacity 0.2s ease-in-out;
+			}
+			
+			/* Show icons once font is loaded */
+			.font-loaded .material-symbols-outlined {
+				opacity: 1;
+			}
+			
+			/* Fallback for very slow connections - show after 2 seconds */
+			.material-symbols-outlined {
+				animation: showIcon 0.1s ease-in-out 2s forwards;
+			}
+			
+			@keyframes showIcon {
+				to {
+					opacity: 1;
+				}
+			}
+		</style>
+		
+		<!-- Font loading detection script -->
+		<script>
+			document.fonts.ready.then(function() {
+				document.documentElement.classList.add('font-loaded');
+			});
+		</script>
+		
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

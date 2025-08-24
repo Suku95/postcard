@@ -122,10 +122,10 @@
 
   const supabaseUrlBase = 'https://djefjmucdhbrngeqovuz.supabase.co/storage/v1/object/public/postcard-images/';
   const supabaseFilenames = [
-    'img1.jpg', 'img2.jpg', 'img3.jpg', 'img4.jpg', 'img5.jpg',
-    'img6.jpg', 'img7.jpg', 'img8.jpg', 'img9.jpg', 'img10.jpg',
-    'img11.jpg', 'img12.jpg', 'img13.jpg', 'img14.jpg', 'img15.jpg',
-    'img16.jpg', 'img17.jpg', 'img18.jpg', 'img19.jpg', 'img20.jpg', 'img21.jpg', 'img22.jpg', 'img23.jpg', 'img24.jpg'
+    'img24.jpg', 'img23.jpg', 'img22.jpg', 'img21.jpg', 'img20.jpg',
+    'img19.jpg', 'img18.jpg', 'img17.jpg', 'img16.jpg', 'img15.jpg', 'img14.jpg',
+    'img13.jpg', 'img12.jpg', 'img11.jpg', 'img10.jpg', 'img9.jpg',
+    'img8.jpg', 'img7.jpg', 'img6.jpg', 'img5.jpg', 'img4.jpg', 'img3.jpg', 'img2.jpg', 'img1.jpg'
   ];
   function getSupabaseImageUrl(imageNum: number) {
     return `${supabaseUrlBase}${supabaseFilenames[imageNum - 1]}`;
@@ -139,7 +139,7 @@
 
 <svelte:head>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Courier+Prime&family=EB+Garamond&family=Jomhuria&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
 </svelte:head>
 
 <div class="w-full h-screen bg-white overflow-hidden">

@@ -58,7 +58,7 @@
 <svelte:head>
   <title>{postcard ? `${postcard.sender_name} sent you a postcard!` : 'A Postcard For You'}</title>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Courier+Prime&family=EB+Garamond&family=Jomhuria&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
 </svelte:head>
 
 {#if postcard}
