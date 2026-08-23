@@ -17,16 +17,27 @@
   let currentImageUrl: string = '';
   let isLoading = true;
   let error: string | null = null;
+  let imageLoaded = false;
+  const loadedUrls = new Set<string>();
 
   // Subscribe to the store
   $: ({ isLoading, error } = $imageStore);
 
   // Update image URL when imageNumber changes
   $: if (isOpen) {
-    currentImageUrl = imageStore.getImageUrl(imageNumber);
+    const nextUrl = imageStore.getImageUrl(imageNumber);
+    if (nextUrl !== currentImageUrl) {
+      currentImageUrl = nextUrl;
+      imageLoaded = loadedUrls.has(nextUrl);
+    }
     if (!$imageStore.images.length) {
       imageStore.loadImages();
     }
+  }
+
+  function handleImageLoad() {
+    loadedUrls.add(currentImageUrl);
+    imageLoaded = true;
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -97,7 +108,10 @@
           <img
               src={currentImageUrl}
             alt="Selected postcard"
-            class="w-[409.248px] h-full object-cover"
+            class="w-[409.248px] h-full object-cover transition-opacity duration-300 {imageLoaded ? 'opacity-100' : 'opacity-0'}"
+              decoding="async"
+              fetchpriority="high"
+              onload={handleImageLoad}
               onerror={() => { error = 'Failed to load image'; }}
           />
           {:else}

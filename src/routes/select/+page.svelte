@@ -16,8 +16,14 @@
   let selectedImage: number | null = null;
   
   let MAX_IMAGES = 0;
-  let stackOrder: number[] = []; 
+  let stackOrder: number[] = [];
   let allImages: number[] = [];
+  let loadedImages = new Set<number>();
+
+  function markLoaded(imageNum: number) {
+    loadedImages.add(imageNum);
+    loadedImages = loadedImages;
+  }
 
   let stackContainer: HTMLElement;
   let scrollX = spring(0, {
@@ -314,7 +320,7 @@
           onclick={previousImage} 
           aria-label="Previous postcard"
         >
-          <span class="material-symbols-outlined text-[24px] text-[#5A5A5A]">chevron_left</span>
+          <ChevronLeft class="w-6 h-6 text-[#5A5A5A]" />
         </button>
 
         {#if stackOrder.length > 1}
@@ -336,7 +342,10 @@
               <img
                 src={imageStore.getImageUrl(imageOrderIndex + 1)}
                 alt="Background postcard"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover transition-opacity duration-300 {loadedImages.has(imageOrderIndex + 1) ? 'opacity-100' : 'opacity-0'}"
+                decoding="async"
+                fetchpriority="low"
+                onload={() => markLoaded(imageOrderIndex + 1)}
               />
             </div>
           {/each}
@@ -364,7 +373,10 @@
                 <img
                   src={imageStore.getImageUrl(stackOrder[0] + 1)}
                   alt="Current postcard"
-                  class="w-[80vw] sm:w-[406px] h-[420px] sm:h-[509.49px] object-cover"
+                  class="w-[80vw] sm:w-[406px] h-[420px] sm:h-[509.49px] object-cover transition-opacity duration-300 {loadedImages.has(stackOrder[0] + 1) ? 'opacity-100' : 'opacity-0'}"
+                  decoding="async"
+                  fetchpriority="high"
+                  onload={() => markLoaded(stackOrder[0] + 1)}
                 />
               </button>
             </div>
@@ -377,7 +389,7 @@
           onclick={nextImage} 
           aria-label="Next postcard"
         >
-          <span class="material-symbols-outlined text-[24px] text-[#5A5A5A]">chevron_forward</span>
+          <ChevronRight class="w-6 h-6 text-[#5A5A5A]" />
         </button>
       </div>
     {:else}
@@ -394,18 +406,16 @@
               tabindex="0"
               aria-label={`Open postcard ${imageNum} details`}
             >
-              <div>
+              <div class="w-full aspect-[4/5] bg-gray-100 relative overflow-hidden">
                 {#if imageStore.getImageUrl(imageNum)}
                   <img
                     src={imageStore.getImageUrl(imageNum)}
                     alt={`Postcard ${imageNum}`}
                     loading="lazy"
-                    class="w-full h-auto object-cover"
+                    decoding="async"
+                    class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 {loadedImages.has(imageNum) ? 'opacity-100' : 'opacity-0'}"
+                    onload={() => markLoaded(imageNum)}
                   />
-                {:else}
-                  <div class="w-full bg-gray-200 flex items-center justify-center">
-                    <p class="text-gray-400">Loading...</p>
-                  </div>
                 {/if}
               </div>
             </button>
