@@ -1,6 +1,10 @@
 import { writable, get } from 'svelte/store';
-import type { PostcardImage } from '$lib/supabase';
-import { fetchPostcardImages } from '$lib/supabase';
+import { postcardNames, postcardUrl, postcardThumbUrl } from '$lib/images';
+
+export interface PostcardImage {
+  name: string;
+  url: string;
+}
 
 interface ImageStore {
   images: PostcardImage[];
@@ -8,32 +12,21 @@ interface ImageStore {
   error: string | null;
 }
 
+// Image list is static, so populate it immediately (no async round-trip).
+const allImages: PostcardImage[] = postcardNames.map((name, i) => ({
+  name: `${name}.jpg`,
+  url: postcardUrl(i + 1)
+}));
+
 function createImageStore() {
-  const store = writable<ImageStore>({
-    images: [],
-    isLoading: false,
-    error: null
-  });
+  const store = writable<ImageStore>({ images: allImages, isLoading: false, error: null });
 
   return {
     subscribe: store.subscribe,
-    loadImages: async () => {
-      store.update(state => ({ ...state, isLoading: true, error: null }));
-      try {
-        const images = await fetchPostcardImages();
-        store.set({ images, isLoading: false, error: null });
-        return images;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load images';
-        store.set({ images: [], isLoading: false, error: errorMessage });
-        return [];
-      }
-    },
-    getImageUrl: (imageNumber: number) => {
-      const state = get(store);
-      return state.images[imageNumber - 1]?.url || '';
-    }
+    loadImages: async () => get(store).images,
+    getImageUrl: (imageNumber: number) => postcardUrl(imageNumber),
+    getThumbUrl: (imageNumber: number) => postcardThumbUrl(imageNumber)
   };
 }
 
-export const imageStore = createImageStore(); 
+export const imageStore = createImageStore();

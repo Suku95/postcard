@@ -1,13 +1,14 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
   import { ChevronLeft, ChevronRight, LayoutGrid, Layers, X } from "lucide-svelte";
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import PostcardModal from "$lib/components/PostcardModal.svelte";
   import { goto } from "$app/navigation";
-  import { spring } from 'svelte/motion';
-  import { fade, fly } from 'svelte/transition';
+    import { fade, fly } from 'svelte/transition';
   import { imageStore } from '$lib/stores/images';
   import { page } from '$app/stores';
+  import { selfPortraitUrl } from '$lib/images';
+  import { holdKeyboardForNextPage } from '$lib/keyboard';
 
   let currentIndex = 0;
   let isStackView = true;
@@ -20,10 +21,6 @@
   let allImages: number[] = [];
 
   let stackContainer: HTMLElement;
-  let scrollX = spring(0, {
-    stiffness: 0.08,
-    damping: 0.4
-  });
 
   // Prevent page scroll when stack view is active
   $: {
@@ -76,19 +73,193 @@
     };
   });
 
+  // ---- Card stack swipe (touch) ----
+  // Track phase: the top card follows the finger 1:1 via direct transform writes
+  // (no Svelte state per pointermove). Release phase: a spring seeded with the
+  // fling velocity. Only the top card moves; the card beneath rises to meet it.
+  let frontCard: HTMLElement;
+  let bgCards: HTMLElement[] = [];
+  let cardX = 0;          // top card offset, px
+  let cardVelocity = 0;   // px/s
+  let rafId = 0;
+  let isDragging = false;
+  let didSwipe = false;
+  let activePointer: number | null = null;
+  let startPointerX = 0;
+  let startPointerY = 0;
+  let startCardX = 0;
+  let dragAxis: 'x' | 'y' | null = null;
+  let samples: { t: number; x: number }[] = [];
+  let pendingFling: 'next' | 'previous' | null = null;
+
+  const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cardWidth = () => frontCard?.offsetWidth || 400;
+
+  function renderCards() {
+    if (!frontCard) return;
+    const rotation = Math.max(-12, Math.min(12, cardX * 0.04));
+    frontCard.style.transform = `translate3d(${cardX}px, 0, 0) rotate(${rotation}deg)`;
+    // Linked value: when swiping to the next card, the card beneath moves up into
+    // the top slot in step with the drag (its slot is 20px right / 12px down).
+    const below = bgCards[0];
+    if (below) {
+      const p = cardX < 0 ? Math.min(1, -cardX / cardWidth()) : 0;
+      below.style.transform = `translate3d(${-20 * p}px, ${-12 * p}px, ${-100 * (1 - p)}px) rotate(${2 * (1 - p)}deg)`;
+    }
+  }
+
+  function setInteracting(on: boolean) {
+    frontCard?.classList.toggle('no-transition', on);
+    bgCards.forEach((card) => card && (card.style.transition = on ? 'none' : ''));
+  }
+
+  // Simple damped spring integrated per frame; keeps velocity so it can be caught mid-flight
+  function runSpring(target: number, stiffness: number, damping: number, onDone?: () => void, stopWhen?: (x: number) => boolean) {
+    cancelAnimationFrame(rafId);
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(0.032, (now - last) / 1000);
+      last = now;
+      const force = -stiffness * (cardX - target) - damping * cardVelocity;
+      cardVelocity += force * dt;
+      cardX += cardVelocity * dt;
+      const settled = Math.abs(cardVelocity) < 5 && Math.abs(cardX - target) < 0.5;
+      if (settled) {
+        cardX = target;
+        cardVelocity = 0;
+      }
+      renderCards();
+      if (settled || stopWhen?.(cardX)) {
+        rafId = 0;
+        onDone?.();
+        return;
+      }
+      rafId = requestAnimationFrame(step);
+    };
+    rafId = requestAnimationFrame(step);
+  }
+
+  async function commitFling(direction: 'next' | 'previous') {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+    pendingFling = null;
+    // Let the remaining cards glide into their new slots
+    bgCards.forEach((card) => card && (card.style.transition = ''));
+    if (direction === 'next') nextImage();
+    else previousImage();
+    cardX = 0;
+    cardVelocity = 0;
+    if (frontCard) frontCard.style.transform = 'translate3d(0, 0, 0) rotate(0deg)';
+    await tick();
+    requestAnimationFrame(() => {
+      if (!isDragging) frontCard?.classList.remove('no-transition');
+    });
+  }
+
+  function settleBack() {
+    if (prefersReducedMotion()) {
+      cardX = 0;
+      cardVelocity = 0;
+      renderCards();
+      setInteracting(false);
+      return;
+    }
+    // Fast snap-back; slight bounce is fine because the user applied force
+    runSpring(0, 600, 38, () => setInteracting(false));
+  }
+
+  function flingOut(sign: number) {
+    const direction = sign < 0 ? 'next' : 'previous';
+    if (prefersReducedMotion()) {
+      commitFling(direction);
+      return;
+    }
+    pendingFling = direction;
+    // Leave the finger at the speed it was moving, but never slower than a brisk exit
+    if (Math.abs(cardVelocity) < 900 || Math.sign(cardVelocity) !== sign) cardVelocity = sign * 900;
+    const offscreen = window.innerWidth / 2 + cardWidth() * 0.75 + 40;
+    runSpring(sign * (offscreen + 400), 170, 26, () => commitFling(direction), (x) => Math.abs(x) >= offscreen);
+  }
+
+  function handleSwipeStart(event: PointerEvent) {
+    if (event.pointerType === 'mouse' || isModalOpen || !frontCard) return;
+    // Interruptible: finish a card that's already flying away, or catch one springing back
+    if (pendingFling) commitFling(pendingFling);
+    else cancelAnimationFrame(rafId);
+    activePointer = event.pointerId;
+    startPointerX = event.clientX;
+    startPointerY = event.clientY;
+    startCardX = cardX;
+    dragAxis = null;
+    didSwipe = false;
+    isDragging = true;
+    samples = [{ t: event.timeStamp, x: cardX }];
+    setInteracting(true);
+  }
+
+  function handleSwipeMove(event: PointerEvent) {
+    if (!isDragging || event.pointerId !== activePointer) return;
+    const dx = event.clientX - startPointerX;
+    const dy = event.clientY - startPointerY;
+    if (!dragAxis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      dragAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (dragAxis === 'x') (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    }
+    if (dragAxis !== 'x') return;
+    if (!didSwipe) didSwipe = true;
+    cardX = startCardX + dx;
+    samples.push({ t: event.timeStamp, x: cardX });
+    while (samples.length > 2 && event.timeStamp - samples[0].t > 100) samples.shift();
+    renderCards();
+  }
+
+  function handleSwipeEnd(event: PointerEvent) {
+    if (!isDragging || event.pointerId !== activePointer) return;
+    isDragging = false;
+    activePointer = null;
+    if (dragAxis !== 'x' || event.type === 'pointercancel') {
+      cardVelocity = 0;
+      settleBack();
+      return;
+    }
+    const first = samples[0];
+    const last = samples[samples.length - 1];
+    const dt = last.t - first.t;
+    cardVelocity = dt > 0 ? ((last.x - first.x) / dt) * 1000 : 0;
+
+    const sign = Math.sign(cardX) || Math.sign(cardVelocity);
+    const pastDistance = Math.abs(cardX) > cardWidth() * 0.35;
+    const flickedOut = Math.abs(cardVelocity) > 500 && Math.sign(cardVelocity) === sign;
+    const flickedBack = Math.abs(cardVelocity) > 500 && Math.sign(cardVelocity) === -sign;
+    // Dismiss on distance OR velocity — unless the user is throwing it back
+    if (sign !== 0 && (flickedOut || (pastDistance && !flickedBack))) flingOut(sign);
+    else settleBack();
+  }
+
+  // Desktop trackpad / mouse wheel: step through cards
+  let wheelAccum = 0;
+  let wheelTimer: ReturnType<typeof setTimeout>;
   function handleWheel(event: WheelEvent) {
     if (!isStackView || isModalOpen) return;
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    const newX = $scrollX + delta * 0.5;
-    scrollX.set(newX);
-    if (Math.abs($scrollX) > 120) {
-      if ($scrollX > 0) {
-        previousImage();
-      } else {
-        nextImage();
-      }
-      scrollX.set(0, { hard: false });
+    wheelAccum += delta * 0.5;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => (wheelAccum = 0), 150);
+    if (Math.abs(wheelAccum) > 120) {
+      if (wheelAccum > 0) previousImage();
+      else nextImage();
+      wheelAccum = 0;
+    }
+  }
+
+  // Preload the full-size images that can become the top card next
+  $: if (typeof window !== 'undefined' && stackOrder.length > 1) {
+    for (const i of [stackOrder[1], stackOrder[stackOrder.length - 1]]) {
+      const img = new Image();
+      img.src = imageStore.getImageUrl(i + 1);
     }
   }
 
@@ -135,6 +306,8 @@
   }
 
   function handleEdit() {
+    // Phones: open the keyboard during this tap so the editor starts in typing mode
+    holdKeyboardForNextPage();
     goto(`/edit?image=${selectedImage}`);
   }
 
@@ -190,8 +363,6 @@
 </script>
 
 <svelte:head>
-  <link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Inter:wght@400;500&family=Caveat:wght@400;500&family=Courier+Prime&display=swap" rel="stylesheet">
-
 </svelte:head>
 
 {#if isAboutModalOpen}
@@ -244,7 +415,7 @@
     </div>
     <!-- Corner Image -->
     <img 
-      src="https://djefjmucdhbrngeqovuz.supabase.co/storage/v1/object/public/postcard-images//Self_Portrait_1.jpg" 
+      src={selfPortraitUrl} 
       alt="Self Portrait" 
       class="absolute bottom-0 left-0 w-64 h-auto select-none pointer-events-none scale-[1.2] origin-left" 
       draggable="false"
@@ -263,11 +434,11 @@
 
 <div class="w-full min-h-screen bg-white p-2 sm:p-4 flex flex-col items-center">
   <!-- Header -->
-  <header class="max-w-[1201px] mx-auto h-[84px] sm:h-16 px-2 sm:px-4 relative w-full">
-    <div class="absolute left-2 sm:left-4 top-[6px]">
+  <header class="max-w-[1201px] mx-auto h-[84px] mobile:h-[100px] sm:h-16 px-2 sm:px-4 relative z-10 w-full">
+    <div class="absolute left-2 sm:left-4 top-[6px] mobile:left-1/2 mobile:-translate-x-1/2 whitespace-nowrap">
       <h1 class="text-[40px] sm:text-[56px] font-jomhuria leading-[40px] sm:leading-[56px] text-black">Send a postcard</h1>
     </div>
-    <div class="absolute left-1/2 -translate-x-1/2 top-[48px] sm:top-[14px] flex items-center gap-2">
+    <div class="absolute left-1/2 -translate-x-1/2 top-[48px] mobile:top-[51px] sm:top-[14px] flex items-center gap-2">
       <button
         class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#EDF2F8] transition-colors duration-200 {isStackView ? 'bg-[#EDF2F8]' : ''}"
         onclick={() => (isStackView = true)}
@@ -300,17 +471,23 @@
   </header>
 
   <!-- Main content -->
-  <main class="flex flex-col items-center justify-center mt-0 sm:mt-[41px] w-full max-w-[1201px]">
+  <main class={isStackView && MAX_IMAGES > 0
+    ? "fixed inset-0 flex items-center justify-center pointer-events-none"
+    : "flex flex-col items-center justify-center mt-0 sm:mt-[41px] w-full max-w-[1201px]"}>
     {#if MAX_IMAGES === 0}
       <p class="text-xl text-gray-600">Loading postcards...</p>
     {:else if isStackView}
       <div 
-        class="relative w-[90vw] sm:w-[499.30px] h-[500px] sm:h-[645.83px] card-stack-perspective"
+        class="relative pointer-events-auto w-[calc(80vw+32px)] sm:w-[454px] h-[calc(80vw*1.255+32px)] sm:h-[557.49px] card-stack-perspective touch-pan-y select-none"
         bind:this={stackContainer}
+        onpointerdown={handleSwipeStart}
+        onpointermove={handleSwipeMove}
+        onpointerup={handleSwipeEnd}
+        onpointercancel={handleSwipeEnd}
       >
         <!-- Left Navigation Arrow -->
         <button
-          class="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-full -ml-0 sm:-ml-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#EDF2F8] transition-colors duration-200 z-20"
+          class="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-full -ml-0 sm:-ml-2 w-10 h-10 mobile:hidden flex items-center justify-center rounded-full hover:bg-[#EDF2F8] transition-colors duration-200 z-20"
           onclick={previousImage} 
           aria-label="Previous postcard"
         >
@@ -320,12 +497,12 @@
         {#if stackOrder.length > 1}
           {#each stackOrder.slice(1, 4) as imageOrderIndex, idx (imageOrderIndex)}
             <div
-              class="absolute w-[85vw] sm:w-[450px] h-[460px] sm:h-[600px] bg-white p-4 sm:p-6 transition-transform duration-500 will-change-transform"
+              bind:this={bgCards[idx]}
+              class="absolute w-[calc(80vw+32px)] sm:w-[450px] h-[calc(80vw*1.255+32px)] sm:h-[600px] bg-white p-4 sm:p-6 transition-transform duration-500 will-change-transform"
               style="
                 left: {20 + (idx * 12)}px; 
                 top: {12 + (idx * 12)}px; 
                 transform: 
-                  translateX({$scrollX * 0.15 * (1 - idx * 0.2)}px)
                   translateZ({-100 - (idx * 20)}px)
                   rotate({2 + (idx * 0.8)}deg); 
                 transform-origin: center;
@@ -334,8 +511,9 @@
               "
             >
               <img
-                src={imageStore.getImageUrl(imageOrderIndex + 1)}
+                src={imageStore.getThumbUrl(imageOrderIndex + 1)}
                 alt="Background postcard"
+                decoding="async"
                 class="w-full h-full object-cover"
               />
             </div>
@@ -344,27 +522,26 @@
 
         {#if stackOrder.length > 0}
           <div 
-            class="absolute left-0 top-0 bg-white p-4 sm:p-6 transition-all duration-500 will-change-transform hover-card"
+            bind:this={frontCard}
+            class="absolute left-0 top-0 bg-white p-4 sm:p-6 will-change-transform hover-card"
             style="
-              transform-origin: center; 
-              transform: 
-                translateX({$scrollX * 0.15}px)
-                translateZ(0)
-                rotate({$scrollX * 0.005}deg);
+              transform-origin: center bottom; 
               box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.1);
             "
           >
             <div class="flex justify-center items-center">
               <button
                 class="w-full relative overflow-hidden"
-                onclick={() => openModal(stackOrder[0] + 1)}
+                onclick={() => { if (!didSwipe) openModal(stackOrder[0] + 1); }}
                 tabindex="0"
                 aria-label="Open postcard details"
               >
                 <img
                   src={imageStore.getImageUrl(stackOrder[0] + 1)}
+                  style="background: url({imageStore.getThumbUrl(stackOrder[0] + 1)}) center / cover;"
                   alt="Current postcard"
-                  class="w-[80vw] sm:w-[406px] h-[420px] sm:h-[509.49px] object-cover"
+                  class="w-[80vw] sm:w-[406px] h-[calc(80vw*1.255)] sm:h-[509.49px] object-cover pointer-events-none"
+                  draggable="false"
                 />
               </button>
             </div>
@@ -373,7 +550,7 @@
 
         <!-- Right Navigation Arrow -->
         <button
-          class="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-full -mr-0 sm:-mr-2 w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#EDF2F8] transition-colors duration-200 z-20"
+          class="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-full -mr-0 sm:-mr-2 w-10 h-10 mobile:hidden flex items-center justify-center rounded-full hover:bg-[#EDF2F8] transition-colors duration-200 z-20"
           onclick={nextImage} 
           aria-label="Next postcard"
         >
@@ -395,9 +572,12 @@
               aria-label={`Open postcard ${imageNum} details`}
             >
               <div>
-                {#if imageStore.getImageUrl(imageNum)}
+                {#if imageStore.getThumbUrl(imageNum)}
                   <img
-                    src={imageStore.getImageUrl(imageNum)}
+                    src={imageStore.getThumbUrl(imageNum)}
+                    decoding="async"
+                    width="640"
+                    height="853"
                     alt={`Postcard ${imageNum}`}
                     loading="lazy"
                     class="w-full h-auto object-cover"
@@ -429,6 +609,9 @@
   .font-courier-prime {
     font-family: 'Courier Prime', monospace;
   }
+  :global(.no-transition) {
+    transition: none !important;
+  }
   .card-stack-perspective {
     perspective: 2500px;
     perspective-origin: 75% 50%;
@@ -455,9 +638,12 @@
     transition: transform 100ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 100ms cubic-bezier(0.23, 1, 0.32, 1);
     transform-origin: center;
   }
-  .hover-card:hover {
-    transform: scale(1.02) translateY(-12px) !important;
-    box-shadow: 0px 40px 80px rgba(0, 0, 0, 0.15) !important;
+  /* Only lift on real hover; on touch screens :hover sticks after a tap */
+  @media (hover: hover) {
+    .hover-card:hover {
+      transform: scale(1.02) translateY(-12px) !important;
+      box-shadow: 0px 40px 80px rgba(0, 0, 0, 0.15) !important;
+    }
   }
   button {
     -webkit-tap-highlight-color: transparent;

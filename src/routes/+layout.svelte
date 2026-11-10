@@ -19,8 +19,6 @@
 	<meta name="twitter:description" content="Send hand-designed digital postcards with love." />
 	<meta name="twitter:image" content="https://postcards-weld.vercel.app/og-preview.jpg" />
 
-	<!-- Fonts -->
-	<link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Inter:wght@400;500&family=Caveat:wght@400;500&display=swap" rel="stylesheet">
 </svelte:head>
 
 <slot />

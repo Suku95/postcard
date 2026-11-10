@@ -6,6 +6,7 @@
   import { X, ArrowLeft, ArrowRight } from "lucide-svelte";
   import { goto } from "$app/navigation";
   import { onMount } from 'svelte';
+  import { postcardThumbUrl } from '$lib/images';
 
   const MAX_IMAGES = 7; // Update this when adding more images
 
@@ -19,14 +20,6 @@
   }
 
   const randomImages = getRandomImageNumbers(4);
-
-  const supabaseUrlBase = 'https://djefjmucdhbrngeqovuz.supabase.co/storage/v1/object/public/postcard-images/';
-  const supabaseFilenames = [
-    'img26.jpg','img25.jpg','img24.jpg', 'img23.jpg', 'img22.jpg', 'img21.jpg', 'img20.jpg',
-    'img19.jpg', 'img18.jpg', 'img17.jpg', 'img16.jpg', 'img15.jpg', 'img14.jpg',
-    'img13.jpg', 'img12.jpg', 'img11.jpg', 'img10.jpg', 'img9.jpg',
-    'img8.jpg', 'img7.jpg', 'img6.jpg', 'img5.jpg', 'img4.jpg', 'img3.jpg', 'img2.jpg', 'img1.jpg'
-  ];
 
   function navigateToSelect() {
     goto('/select');
@@ -49,14 +42,13 @@
 </script>
 
 <svelte:head>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Inter:wght@400;500&family=Caveat:wght@400;500&display=swap" rel="stylesheet">
+
 </svelte:head>
 
 
 
-<div class="w-screen h-screen relative bg-white overflow-hidden font-inter">
-  <div class="w-full h-full relative">
+<div class="w-screen h-screen mobile:w-full mobile:h-auto mobile:min-h-[100dvh] relative bg-white overflow-hidden font-inter">
+  <div class="w-full h-full mobile:min-h-[100dvh] relative">
     <!-- Backdrop overlay -->
     <div class="w-full h-full absolute inset-0 bg-white backdrop-blur-[4px]"></div>
 
@@ -69,11 +61,11 @@
     </button>
 
     <!-- Main content -->
-    <div class="absolute left-1/2 top-[15%] sm:top-[20%] -translate-x-1/2 flex flex-col items-center gap-[32px] w-[min(445px,90%)] px-4 sm:px-0">
+    <div class="absolute left-1/2 top-[15%] sm:top-[20%] -translate-x-1/2 mobile:relative mobile:left-auto mobile:top-auto mobile:translate-x-0 mobile:mx-auto mobile:pt-16 mobile:pb-10 flex flex-col items-center gap-[32px] mobile:gap-6 w-[min(445px,90%)] mobile:w-full px-4 sm:px-0">
       <div class="flex flex-col items-center gap-[12px] w-full">
         <div class="text-center text-black text-[48px] sm:text-[64px] font-jomhuria font-normal w-full leading-[48px] sm:leading-[64px]">Send a postcard</div>
 
-        <div class="text-center font-caveat text-[22px] sm:text-[26px] leading-[1.5] text-black px-[2px]">
+        <div class="text-center font-caveat text-[22px] mobile:text-[20px] sm:text-[26px] leading-[1.5] text-black px-[2px]">
           There was a time when sending a postcard meant - slowing down to share a moment, a thought, or a feeling with friends and family far away. I've always loved that. This is my way of bringing back that magic digitally. <br> In a world of instant messages, here's a space for art, memories, and words. Each postcard features artwork I've created over the years, and will keep adding to. Enjoy! <br> ~Sukanya
         </div>
       </div>
@@ -96,28 +88,28 @@
       <!-- Bottom left postcard -->
       <div class="absolute w-[276.77px] h-[369.02px] left-[5%] bottom-[15%] [transform:rotate(3.81deg)] origin-top-left">
         <div class="w-full h-full bg-white shadow-[0px_4px_4px_-4px_rgba(12,12,13,0.05)] p-[13.67px]">
-          <img src={`${supabaseUrlBase}${supabaseFilenames[randomImages[0] - 1]}`} class="w-full h-full object-cover" alt="Decorative postcard" />
+          <img src={postcardThumbUrl(randomImages[0])} decoding="async" class="w-full h-full object-cover" alt="Decorative postcard" />
         </div>
       </div>
 
       <!-- Top left postcard -->
       <div class="absolute w-[264px] h-[352px] left-[2%] top-[20%] [transform:rotate(-6deg)] origin-top-left">
         <div class="w-full h-full bg-white shadow-[0px_4px_4px_-4px_rgba(12,12,13,0.05)] p-[13.04px]">
-          <img src={`${supabaseUrlBase}${supabaseFilenames[randomImages[1] - 1]}`} class="w-full h-full object-cover" alt="Decorative postcard" />
+          <img src={postcardThumbUrl(randomImages[1])} decoding="async" class="w-full h-full object-cover" alt="Decorative postcard" />
         </div>
       </div>
 
       <!-- Top right postcard -->
       <div class="absolute w-[264px] h-[352px] right-[5%] top-[20%] [transform:rotate(6.61deg)] origin-top-right">
         <div class="w-full h-full bg-white shadow-[0px_4px_4px_-4px_rgba(12,12,13,0.05)] p-[13.04px]">
-          <img src={`${supabaseUrlBase}${supabaseFilenames[randomImages[2] - 1]}`} class="w-full h-full object-cover" alt="Decorative postcard" />
+          <img src={postcardThumbUrl(randomImages[2])} decoding="async" class="w-full h-full object-cover" alt="Decorative postcard" />
         </div>
       </div>
 
       <!-- Bottom right postcard -->
       <div class="absolute w-[260px] h-[346.67px] right-[8%] bottom-[12%] [transform:rotate(-5.03deg)] origin-bottom-right">
         <div class="w-full h-full bg-white shadow-[0px_4px_4px_-4px_rgba(12,12,13,0.05)] p-[12.04px]">
-          <img src={`${supabaseUrlBase}${supabaseFilenames[randomImages[3] - 1]}`} class="w-full h-full object-cover" alt="Decorative postcard" />
+          <img src={postcardThumbUrl(randomImages[3])} decoding="async" class="w-full h-full object-cover" alt="Decorative postcard" />
         </div>
       </div>
     </div>

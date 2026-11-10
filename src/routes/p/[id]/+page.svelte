@@ -4,6 +4,9 @@
   import { imageStore } from '$lib/stores/images';
   import { stampStore } from '$lib/stores/stamps';
   import { goto } from '$app/navigation';
+  import ScaleToFit from '$lib/components/ScaleToFit.svelte';
+  import { artworkInFront, ARTWORK_BEHIND } from '$lib/postcardLayout';
+  let viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
   
   export let data: PageData;
 
@@ -55,26 +58,27 @@
 
 </script>
 
+<svelte:window bind:innerWidth={viewportWidth} />
+
 <svelte:head>
   <title>{postcard ? `${postcard.sender_name} sent you a postcard!` : 'A Postcard For You'}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Courier+Prime&family=EB+Garamond&family=Jomhuria&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-
 </svelte:head>
 
 {#if postcard}
-<div class="w-full min-h-screen bg-white flex flex-col items-center justify-start pt-[50px] px-4 pb-4 sm:px-8 sm:pb-8 relative">
+<div class="w-full min-h-screen bg-white flex flex-col items-center justify-start pt-[50px] mobile:pt-6 px-4 pb-4 mobile:pb-36 sm:px-8 sm:pb-8 relative overflow-x-hidden">
   <header class="w-full max-w-4xl mx-auto pb-8 text-center">
-    <h1 class="text-[52px] font-normal text-black font-jomhuria">
+    <h1 class="text-[52px] mobile:text-[40px] mobile:leading-[40px] font-normal text-black font-jomhuria">
       {postcard.sender_name} sent you a postcard!
       </h1>
   </header>
 
   <main class="flex-1 flex flex-col items-center justify-center w-full">
-    <div class="relative scale-[0.9]" style="width: 600px; height: 600px;">
+    <ScaleToFit width={600} height={600} maxScale={0.9} overflow={80} phoneFill>
+    <div class="relative" style="width: 600px; height: 600px;">
       <!-- Image Side -->
         <div 
           class="absolute -top-6 left-[72px] w-[450px] h-[600px] shadow-[0px_30.29px_83.51px_rgba(12,12,13,0.10)] rounded-lg overflow-hidden cursor-pointer transition-all duration-300" 
-        style="transform: rotate({imageOnTop ? '0deg' : '12deg'}); background-color: {postcard.selected_color === '#FFEDB5' ? '#FFFCF2' : '#FFFFFF'}; z-index: {imageOnTop ? 20 : 10};"
+        style="transform: {imageOnTop ? artworkInFront(viewportWidth) : ARTWORK_BEHIND}; transform-origin: center; background-color: {postcard.selected_color === '#FFEDB5' ? '#FFFCF2' : '#FFFFFF'}; z-index: {imageOnTop ? 20 : 10};"
         onclick={toggleCardOrder}
         role="button" tabindex="0" 
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleCardOrder()}}
@@ -115,8 +119,8 @@
             </div>
           {/if}
             <div class="flex h-full">
-              <div class="flex-1 relative">
-              <div class="w-full h-full text-2xl {postcard.selected_font === 'Caveat' ? 'font-caveat' : postcard.selected_font === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'}"
+              <div class="flex-1 min-w-0 relative pr-4">
+              <div class="postcard-text w-full h-full text-2xl {postcard.selected_font === 'Caveat' ? 'font-caveat' : postcard.selected_font === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'}"
                 style="font-size: {postcard.selected_font === 'Caveat' ? '26px' : '20px'}; white-space: pre-wrap; word-break: break-word;"
                 >
                 {postcard.message}
@@ -131,7 +135,7 @@
                 </div>
                 <div class="pl-8 pr-6 mt-auto mb-16 relative">
                 <p class="text-base mb-4" style="color: {postcard.selected_color === '#FFFFFF' ? '#B7B7B7' : '#C1AA8E'};">To</p>
-                <div class="w-full h-[168px] {postcard.selected_font === 'Caveat' ? 'font-caveat' : postcard.selected_font === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'} lined-textarea"
+                <div class="postcard-text w-full h-[168px] {postcard.selected_font === 'Caveat' ? 'font-caveat' : postcard.selected_font === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'} lined-textarea"
                   style="font-size: {postcard.selected_font === 'Caveat' ? '26px' : '20px'}; --line-color: {postcard.selected_color === '#FFFFFF' ? '#E9E9E9' : '#E4CE9E'}; white-space: pre-wrap; word-break: break-word;"
                   >
                   {postcard.recipient_info}
@@ -142,15 +146,16 @@
         </div>
       </div>
     </div>
+    </ScaleToFit>
   </main>
 
-  <footer class="w-full max-w-7xl mx-auto p-4 sm:p-6 flex justify-between items-center fixed bottom-0 left-0 right-0">
-    <span class="text-xs text-gray-500">© 2025 sendapostcard.art</span>
+  <footer class="w-full max-w-7xl mx-auto p-4 sm:p-6 flex justify-between items-center mobile:flex-col-reverse mobile:items-stretch mobile:gap-3 fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+    <span class="text-xs text-gray-500 mobile:text-center">© 2025 sendapostcard.art</span>
         <a 
       href="/select" 
           target="_blank"
           rel="noopener noreferrer"
-      class="px-6 py-3 bg-black text-white rounded-[12px] flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm font-medium"
+      class="px-6 py-3 mobile:py-4 mobile:w-full bg-black text-white rounded-[12px] flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm font-medium"
       aria-label="Send a reply (opens in a new tab)"
         >
       Send a reply

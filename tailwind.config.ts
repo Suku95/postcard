@@ -18,6 +18,10 @@ const config: Config = {
 			}
 		},
 		extend: {
+			screens: {
+				// Phones: everything up to 480px wide (iPhone 17 is 402px, Pro Max 440px)
+				mobile: { raw: '(max-width: 480px)' }
+			},
 			colors: {
 				border: 'hsl(var(--border) / <alpha-value>)',
 				input: 'hsl(var(--input) / <alpha-value>)',

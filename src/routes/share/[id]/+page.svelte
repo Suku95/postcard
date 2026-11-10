@@ -1,6 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
+  import { postcardUrl } from "$lib/images";
+  import ScaleToFit from "$lib/components/ScaleToFit.svelte";
+  import { artworkInFront, ARTWORK_BEHIND } from '$lib/postcardLayout';
+  let viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
   import { Loader2, RotateCw } from "lucide-svelte";
   import { stampStore } from "$lib/stores/stamps";
 
@@ -14,14 +18,6 @@
   let selectedImage = 1;
   let imageOnTop = false;
   let indiaStampUrl: string | null = null;
-
-  const supabaseUrlBase = 'https://djefjmucdhbrngeqovuz.supabase.co/storage/v1/object/public/postcard-images/';
-  const supabaseFilenames = [
-    'img26.jpg','img25.jpg','img24.jpg', 'img23.jpg', 'img22.jpg', 'img21.jpg', 'img20.jpg',
-    'img19.jpg', 'img18.jpg', 'img17.jpg', 'img16.jpg', 'img15.jpg', 'img14.jpg',
-    'img13.jpg', 'img12.jpg', 'img11.jpg', 'img10.jpg', 'img9.jpg',
-    'img8.jpg', 'img7.jpg', 'img6.jpg', 'img5.jpg', 'img4.jpg', 'img3.jpg', 'img2.jpg', 'img1.jpg'
-  ];
 
   onMount(() => {
     stampStore.loadStamps();
@@ -55,12 +51,13 @@
 
   // Function to get the correct image extension
   function getSupabaseImageUrl(imageNum: number): string {
-    return `${supabaseUrlBase}${supabaseFilenames[imageNum - 1]}`;
+    return postcardUrl(imageNum);
   }
 </script>
 
+<svelte:window bind:innerWidth={viewportWidth} />
+
 <svelte:head>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Courier+Prime&family=EB+Garamond&family=Jomhuria&display=swap" rel="stylesheet">
 </svelte:head>
 
 <div class="w-full min-h-screen bg-white flex flex-col items-center justify-start pt-8 pb-16 px-4">
@@ -70,15 +67,16 @@
     </div>
   {:else}
     <!-- Header -->
-    <h1 class="text-[40px] font-jomhuria leading-[40px] text-black mb-16">{senderName} sent you a postcard!</h1>
+    <h1 class="text-[40px] font-jomhuria leading-[40px] text-black mb-16 mobile:mb-8 text-center px-4">{senderName} sent you a postcard!</h1>
 
-    <div class="postcard-wrapper w-full">
+    <div class="postcard-wrapper w-full flex justify-center">
     <!-- Postcard Container -->
+      <ScaleToFit width={600} height={600} overflow={80} phoneFill>
       <div class="relative postcard" style="width: 600px; height: 600px;">
       <!-- Image Side (Bottom Layer) -->
       <div 
         class="absolute -top-6 left-[72px] w-[450px] h-[600px] shadow-[0px_30.29px_83.51px_rgba(12,12,13,0.10)] rounded-lg overflow-hidden cursor-pointer transition-all duration-300" 
-        style="transform: rotate({imageOnTop ? '0deg' : '12deg'}); background-color: {selectedColor === '#FFEDB5' ? '#FFFCF2' : '#FFFFFF'}; z-index: {imageOnTop ? 20 : 10};"
+        style="transform: {imageOnTop ? artworkInFront(viewportWidth) : ARTWORK_BEHIND}; transform-origin: center; background-color: {selectedColor === '#FFEDB5' ? '#FFFCF2' : '#FFFFFF'}; z-index: {imageOnTop ? 20 : 10};"
         onclick={() => toggleCardOrder()}
       >
         <div class="w-full h-full flex items-center justify-center">
@@ -102,8 +100,8 @@
           <!-- Main Content Area -->
           <div class="flex h-full">
             <!-- Writing Area -->
-            <div class="flex-1 relative">
-              <div class="w-full h-full text-2xl {selectedFont === 'Caveat' ? 'font-caveat' : selectedFont === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'}"
+            <div class="flex-1 min-w-0 relative pr-4">
+              <div class="postcard-text w-full h-full text-2xl {selectedFont === 'Caveat' ? 'font-caveat' : selectedFont === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'}"
                 style="font-size: {selectedFont === 'Caveat' ? '26px' : '20px'};"
               >
                 {message}
@@ -135,7 +133,7 @@
               <!-- To Section -->
               <div class="pl-8 pr-6 mt-auto mb-16 relative">
                 <p class="text-base mb-4" style="color: {selectedColor === '#FFFFFF' ? '#B7B7B7' : '#C1AA8E'};">To</p>
-                <div class="w-full h-[168px] {selectedFont === 'Caveat' ? 'font-caveat' : selectedFont === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'} lined-textarea"
+                <div class="postcard-text w-full h-[168px] {selectedFont === 'Caveat' ? 'font-caveat' : selectedFont === 'Courier Prime' ? 'font-courier-prime' : 'font-eb-garamond'} lined-textarea"
                   style="font-size: {selectedFont === 'Caveat' ? '26px' : '20px'}; --line-color: {selectedColor === '#FFFFFF' ? '#E9E9E9' : '#E4CE9E'};"
                 >
                   {recipientInfo}
@@ -146,10 +144,11 @@
           </div>
         </div>
       </div>
+      </ScaleToFit>
     </div>
 
     <!-- Send Reply Button -->
-    <div class="mt-16">
+    <div class="mt-16 mobile:mt-10">
       <a 
         href="/select"
         class="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-[#1A1A1A] transition-colors"

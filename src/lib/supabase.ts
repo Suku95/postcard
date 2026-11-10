@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { postcardNames, postcardUrl, stampUrlByName } from '$lib/images';
 
 // These environment variables need to be set in your .env file
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-console.log(supabaseUrl, supabaseAnonKey);
-console.log('TEST VAR:', import.meta.env.VITE_TEST_VAR);
 
 // Create a client that can be used in both browser and server
 export const supabase = createClient(
@@ -18,23 +17,9 @@ export interface PostcardImage {
   url: string;
 }
 
-// Function to fetch images from the postcard-images storage bucket
-export const fetchPostcardImages = async (): Promise<PostcardImage[]> => {
-  // Filenames exactly as in Supabase, in reverse order (newest first)
-  const filenames = [
-    'img26.jpg','img25.jpg','img24.jpg', 'img23.jpg', 'img22.jpg', 'img21.jpg', 'img20.jpg',
-    'img19.jpg', 'img18.jpg', 'img17.jpg', 'img16.jpg', 'img15.jpg', 'img14.jpg',
-    'img13.jpg', 'img12.jpg', 'img11.jpg', 'img10.jpg', 'img9.jpg',
-    'img8.jpg', 'img7.jpg', 'img6.jpg', 'img5.jpg', 'img4.jpg', 'img3.jpg', 'img2.jpg', 'img1.jpg'
-  ];
-
-  const urlBase = 'https://djefjmucdhbrngeqovuz.supabase.co/storage/v1/object/public/postcard-images/';
-  const images = filenames.map(name => ({
-    name,
-    url: urlBase + name
-  }));
-  return images;
-};
+// Postcard images (pre-optimised WebP served locally), newest first
+export const fetchPostcardImages = async (): Promise<PostcardImage[]> =>
+  postcardNames.map((name, i) => ({ name: `${name}.jpg`, url: postcardUrl(i + 1) }));
 
 // Type for the stamp images
 export interface StampImage {
@@ -42,31 +27,12 @@ export interface StampImage {
   url: string;
 }
 
-// Function to fetch stamp images from the stamp-images storage bucket
-export const fetchStampImages = async (): Promise<StampImage[]> => {
-  // Assuming 14 stamps based on existing data
-  const filenames = Array.from({ length: 14 }, (_, i) => `stamp${i + 1}.jpg`);
-  const urlBase = `${supabaseUrl}/storage/v1/object/public/stamp-images/`;
+// Stamp images (pre-optimised WebP served locally)
+export const fetchStampImages = async (): Promise<StampImage[]> =>
+  Array.from({ length: 14 }, (_, i) => {
+    const name = `stamp${i + 1}.jpg`;
+    return { name, url: stampUrlByName(name) };
+  });
 
-  if (!supabaseUrl) {
-    console.error("Supabase URL is not configured. Cannot fetch stamp images.");
-    return [];
-  }
-
-  const images = filenames.map(name => ({
-    name,
-    url: urlBase + name
-  }));
-  console.log('Fetched stamp images:', images);
-  return images;
-};
-
-// Function to get a public URL for a specific stamp by filename
-export const getStampUrlByName = (filename: string): string | null => {
-  if (!supabaseUrl) {
-    console.error("Supabase URL is not configured. Cannot get stamp URL.");
-    return null;
-  }
-  const urlBase = `${supabaseUrl}/storage/v1/object/public/stamp-images/`;
-  return urlBase + filename;
-}; 
+// Function to get a URL for a specific stamp by filename
+export const getStampUrlByName = (filename: string): string | null => stampUrlByName(filename);

@@ -55,6 +55,24 @@
     window.removeEventListener('keydown', handleKeydown, true);
   }
 
+  // Swipe left/right on touch screens to browse postcards
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  function handleSwipeStart(e: PointerEvent) {
+    if (e.pointerType === 'mouse') return;
+    swipeStartX = e.clientX;
+    swipeStartY = e.clientY;
+  }
+  function handleSwipeEnd(e: PointerEvent) {
+    if (e.pointerType === 'mouse') return;
+    const dx = e.clientX - swipeStartX;
+    const dy = e.clientY - swipeStartY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) onNext();
+      else onPrevious();
+    }
+  }
+
   onMount(() => {
     return () => {
       if (browser) {
@@ -77,7 +95,7 @@
     >
       <!-- Close button -->
       <button
-        class="absolute right-6 top-6 p-2 hover:bg-black/5 rounded-full"
+        class="absolute right-6 top-6 mobile:right-3 mobile:top-3 p-2 hover:bg-black/5 rounded-full"
         onclick={onClose}
       >
         <X class="w-6 h-6 text-[#3D3D3D]" />
@@ -85,10 +103,14 @@
     </div>
     
     <!-- Modal content -->
-    <div class="relative z-10 -translate-y-6">
+    <div
+      class="relative z-10 -translate-y-6 touch-pan-y"
+      onpointerdown={handleSwipeStart}
+      onpointerup={handleSwipeEnd}
+    >
       <!-- Image -->
-      <div class="bg-white p-4 shadow-[0px_30.29px_83.51px_rgba(12,12,13,0.10)] w-[453.6px]">
-        <div class="h-[560px] flex justify-center items-center">
+      <div class="bg-white p-4 shadow-[0px_30.29px_83.51px_rgba(12,12,13,0.10)] w-[453.6px] mobile:w-[calc(100vw-32px)]">
+        <div class="h-[560px] mobile:h-auto mobile:aspect-[409/560] flex justify-center items-center">
           {#if isLoading && !currentImageUrl}
             <div class="text-gray-500">Loading...</div>
           {:else if error}
@@ -97,7 +119,8 @@
           <img
               src={currentImageUrl}
             alt="Selected postcard"
-            class="w-[409.248px] h-full object-cover"
+            class="w-[409.248px] mobile:w-full h-full object-cover select-none"
+            draggable="false"
               onerror={() => { error = 'Failed to load image'; }}
           />
           {:else}

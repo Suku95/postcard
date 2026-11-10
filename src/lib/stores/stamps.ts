@@ -1,5 +1,16 @@
 import { writable, get } from 'svelte/store';
-import { fetchStampImages, getStampUrlByName as fetchStampUrlByName, type StampImage } from '$lib/supabase';
+import { stampUrlByName as fetchStampUrlByName } from '$lib/images';
+
+export interface StampImage {
+  name: string;
+  url: string;
+}
+
+const fetchStampImages = async (): Promise<StampImage[]> =>
+  Array.from({ length: 14 }, (_, i) => {
+    const name = `stamp${i + 1}.jpg`;
+    return { name, url: fetchStampUrlByName(name) };
+  });
 
 interface StampStore {
   images: StampImage[];

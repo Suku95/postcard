@@ -76,3 +76,24 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+/* Mobile baseline (feel native on phones) */
+html {
+	-webkit-tap-highlight-color: transparent; /* no grey flash on tap */
+	-webkit-text-size-adjust: 100%; /* no font inflation in landscape */
+	overscroll-behavior: none; /* no pull-to-refresh / page rubber-band behind the app */
+}
+
+button,
+a,
+[role='button'] {
+	touch-action: manipulation; /* no double-tap-zoom delay on taps */
+}
+
+/* Written text on the read-only postcard views (post, share, received):
+   keep line breaks, wrap long words, and never spill outside the card */
+.postcard-text {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	overflow: hidden;
+}
