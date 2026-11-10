@@ -17,7 +17,7 @@
   let selectedImage: number | null = null;
   
   let MAX_IMAGES = 0;
-  let stackOrder: number[] = []; 
+  let stackOrder: number[] = [];
   let allImages: number[] = [];
 
   let stackContainer: HTMLElement;
@@ -491,7 +491,7 @@
           onclick={previousImage} 
           aria-label="Previous postcard"
         >
-          <span class="material-symbols-outlined text-[24px] text-[#5A5A5A]">chevron_left</span>
+          <ChevronLeft class="w-6 h-6 text-[#5A5A5A]" />
         </button>
 
         {#if stackOrder.length > 1}
@@ -514,6 +514,7 @@
                 src={imageStore.getThumbUrl(imageOrderIndex + 1)}
                 alt="Background postcard"
                 decoding="async"
+                fetchpriority="low"
                 class="w-full h-full object-cover"
               />
             </div>
@@ -542,6 +543,8 @@
                   alt="Current postcard"
                   class="w-[80vw] sm:w-[406px] h-[calc(80vw*1.255)] sm:h-[509.49px] object-cover pointer-events-none"
                   draggable="false"
+                  decoding="async"
+                  fetchpriority="high"
                 />
               </button>
             </div>
@@ -554,7 +557,7 @@
           onclick={nextImage} 
           aria-label="Next postcard"
         >
-          <span class="material-symbols-outlined text-[24px] text-[#5A5A5A]">chevron_forward</span>
+          <ChevronRight class="w-6 h-6 text-[#5A5A5A]" />
         </button>
       </div>
     {:else}
@@ -582,10 +585,6 @@
                     loading="lazy"
                     class="w-full h-auto object-cover"
                   />
-                {:else}
-                  <div class="w-full bg-gray-200 flex items-center justify-center">
-                    <p class="text-gray-400">Loading...</p>
-                  </div>
                 {/if}
               </div>
             </button>
